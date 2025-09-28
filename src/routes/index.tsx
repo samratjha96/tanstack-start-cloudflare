@@ -3,7 +3,7 @@ import { NavigationBar } from "@/components/navigation";
 import { HeroSection } from "@/components/landing/hero-section";
 import { FeaturesSection } from "@/components/landing/features-section";
 import { Footer } from "@/components/landing/footer";
-import { MiddlewareDemo } from "@/components/demo";
+import { MiddlewareDemo } from "@/components/demo/middleware-demo";
 
 export const Route = createFileRoute("/")({
   component: LandingPage,

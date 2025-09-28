@@ -1,14 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
+import { file, z } from "zod";
 import { env } from "cloudflare:workers";
 
-// Track server function executions
 export const trackServerExecution = createServerFn().handler(async () => {
   const today = new Date().toISOString().split("T")[0];
   const cacheKey = `server_executions:${today}`;
 
   try {
-    // Simple counter in KV
     const currentCount = await env.ANALYTICS_CACHE.get(cacheKey);
     const newCount = currentCount ? parseInt(currentCount) + 1 : 1;
     await env.ANALYTICS_CACHE.put(cacheKey, newCount.toString(), {
@@ -26,7 +24,6 @@ export const trackServerExecution = createServerFn().handler(async () => {
   }
 });
 
-// Get server execution count
 export const getExecutionCount = createServerFn().handler(async () => {
   const today = new Date().toISOString().split("T")[0];
   const cacheKey = `server_executions:${today}`;
@@ -43,47 +40,28 @@ export const getExecutionCount = createServerFn().handler(async () => {
   }
 });
 
-// Export analytics data to R2
-export const exportAnalyticsToR2 = createServerFn()
-  .inputValidator((data: { date?: string } | undefined) =>
-    z.object({ date: z.string().optional() }).parse(data || {}),
-  )
-  .handler(async (ctx) => {
-    const { date } = ctx.data;
+export const exportAnalyticsToR2 = createServerFn({
+  method: "POST",
+})
+  .inputValidator((date: string) => date)
+  .handler(async ({ data: date }) => {
     const exportDate = date || new Date().toISOString().split("T")[0];
     const cacheKey = `server_executions:${exportDate}`;
 
     try {
-      // Get the execution count for the specified date
       const count = await env.ANALYTICS_CACHE.get(cacheKey);
       const executionCount = count ? parseInt(count) : 0;
 
-      // Create export data
       const exportData = {
-        exportInfo: {
-          date: exportDate,
-          exportTimestamp: Date.now(),
-          exportType: "server_executions",
-        },
-        data: {
-          serverExecutions: executionCount,
-          date: exportDate,
-        },
-        metadata: {
-          description:
-            "Daily server function execution count from interactive demo",
-          source: "Cloudflare KV Storage",
-          format: "JSON",
-        },
+        date: exportDate,
+        executions: executionCount,
+        exported: Date.now(),
       };
 
-      // Generate filename with readable timestamp
       const now = new Date();
-      const timeString = now.toISOString().replace(/[:.]/g, "-").slice(0, -5); // Remove milliseconds and colons
+      const timeString = now.toISOString().replace(/[:.]/g, "-").slice(0, -5);
       const filename = `analytics-${exportDate}-${timeString}.json`;
       const fileContent = JSON.stringify(exportData, null, 2);
-
-      // Store in R2
       await env.ANALYTICS_STORAGE.put(filename, fileContent, {
         httpMetadata: {
           contentType: "application/json",
@@ -111,7 +89,6 @@ export const exportAnalyticsToR2 = createServerFn()
     }
   });
 
-// List R2 exports
 export const listR2Exports = createServerFn().handler(async () => {
   try {
     const list = await env.ANALYTICS_STORAGE.list();
@@ -134,13 +111,12 @@ export const listR2Exports = createServerFn().handler(async () => {
   }
 });
 
-// Download R2 export
-export const downloadR2Export = createServerFn()
-  .inputValidator((data: { filename: string } | undefined) =>
-    z.object({ filename: z.string().min(1) }).parse(data || {}),
-  )
-  .handler(async (ctx) => {
-    const { filename } = ctx.data;
+export const downloadR2Export = createServerFn({
+  method: "POST",
+})
+  .inputValidator((filename: string) => filename)
+  .handler(async ({ data: filename }) => {
+    console.log(`Downloading file: ${filename}`);
 
     try {
       const object = await env.ANALYTICS_STORAGE.get(filename);

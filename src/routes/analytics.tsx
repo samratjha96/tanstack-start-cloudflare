@@ -69,7 +69,7 @@ function AnalyticsPage() {
     setExportMessage(null);
 
     try {
-      const result = await exportAnalyticsToR2({ date });
+      const result = await exportAnalyticsToR2({ data: date });
 
       if (result.success) {
         setExportMessage(
@@ -90,7 +90,9 @@ function AnalyticsPage() {
 
   const handleDownload = async (filename: string) => {
     try {
-      const result = await downloadR2Export({ filename });
+      const result = await downloadR2Export({
+        data: filename,
+      });
       if (result.success) {
         // Create a blob and download
         const blob = new Blob([result.content], { type: result.contentType });
