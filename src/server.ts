@@ -5,7 +5,7 @@ import handler from "@tanstack/react-start/server-entry";
 console.log("[server-entry]: using custom server entry in 'src/server.ts'");
 
 export default {
-  fetch(request: Request) {
+  fetch(request: Request, env: Env) {
     return handler.fetch(request, {
       context: {
         fromFetch: true,

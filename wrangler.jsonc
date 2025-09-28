@@ -1,10 +1,29 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tanstack-start-app",
-  "compatibility_date": "2025-09-02",
-  "compatibility_flags": ["nodejs_compat"],
-  "main": "./src/server.ts",
-  "vars": {
-    "MY_VAR": "Hello from Cloudflare",
-  },
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "tanstack-start-app",
+	"compatibility_date": "2025-09-02",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"main": "./src/server.ts",
+	"vars": {
+		"MY_VAR": "Hello from Cloudflare"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "ANALYTICS_CACHE",
+			"id": "0d9743cf73c44f14bbf56e851b8e6fe3"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "ANALYTICS_STORAGE",
+			"bucket_name": "analytics-data"
+		}
+	],
+	"observability": {
+		"logs": {
+			"enabled": true
+		}
+	}
 }

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useExecutionAnalytics } from "@/lib/analytics";
 import {
   Card,
   CardContent,
@@ -23,11 +24,13 @@ import { examplefunction } from "@/core/functions/example-functions";
 
 export function MiddlewareDemo() {
   const [inputValue, setInputValue] = React.useState("Hello TanStack Start!");
+  const trackExecution = useExecutionAnalytics();
 
   const mutation = useMutation({
     mutationFn: examplefunction,
     onSuccess: (data) => {
       console.log("Client: Server function executed successfully:", data);
+      trackExecution(); // Track the execution
     },
     onError: (error) => {
       console.error("Client: Server function failed:", error);

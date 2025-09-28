@@ -30,8 +30,8 @@ export function NotFound({ children }: { children?: any }) {
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <Button 
-                variant="default" 
+              <Button
+                variant="default"
                 onClick={() => window.history.back()}
                 className="flex items-center gap-2"
               >
