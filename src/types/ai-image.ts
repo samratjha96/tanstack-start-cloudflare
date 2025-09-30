@@ -115,12 +115,34 @@ export interface ImagePreviewProps {
   showMetadata?: boolean;
 }
 
+export interface ImageGeneration {
+  id: string;
+  prompt: string;
+  imageCount: number;
+  startTime: number;
+  status: 'pending' | 'generating' | 'completed' | 'error';
+  images?: GeneratedImage[];
+  error?: string;
+  referenceImages?: StoredImage[];
+}
+
+export interface ImageGenerationProps {
+  generation: ImageGeneration;
+  onCancel?: (id: string) => void;
+  onRetry?: (id: string) => void;
+  onImagePreview?: (image: StoredImage | GeneratedImage) => void;
+  onImageDownload?: (image: StoredImage | GeneratedImage) => void;
+}
+
 export interface ImageGalleryProps {
   referenceImages: StoredImage[];
   generatedImages: GeneratedImage[];
-  onDownload: (image: StoredImage | GeneratedImage) => void;
+  onDownload?: (image: StoredImage | GeneratedImage) => void;
   onPreview?: (image: StoredImage | GeneratedImage) => void;
   loading?: boolean;
+  isGenerating?: boolean;
+  elapsedTime?: number;
+  generationError?: string;
 }
 
 export interface ImageUploadProps {

@@ -28,24 +28,24 @@
   - [x] 1.1 Install @ai-sdk/google and related dependencies
   - [x] 1.2 Configure AI SDK with Google provider in project
   - [x] 1.3 Create basic type definitions for AI image generation
-- [ ] 2.0 Create AI Image Generation Server Functions
-  - [ ] 2.1 Create ai-image-functions.ts with image generation server function
-  - [ ] 2.2 Implement reference image upload to R2 with proper prefixes
-  - [ ] 2.3 Integrate Gemini 2.5 Flash Image Preview model for generation
-  - [ ] 2.4 Add error handling and validation for AI API calls
-- [ ] 3.0 Build Studio Route and Core UI Components
-  - [ ] 3.1 Create /studio route with basic layout
-  - [ ] 3.2 Add navigation link to studio in main navigation
-  - [ ] 3.3 Create API key input component with validation
-  - [ ] 3.4 Create text prompt input component
-  - [ ] 3.5 Add generation count selector (1-5 images)
-- [ ] 4.0 Implement Image Upload and Management System
-  - [ ] 4.1 Create image upload component with drag-and-drop
-  - [ ] 4.2 Add file validation (size, format, count limits)
-  - [ ] 4.3 Implement image preview thumbnails for reference images
-  - [ ] 4.4 Add remove functionality for uploaded reference images
-- [ ] 5.0 Create Image Gallery and Download Functionality
-  - [ ] 5.1 Create image gallery component for displaying results
-  - [ ] 5.2 Implement individual image download functionality
-  - [ ] 5.3 Add image preview/lightbox for generated images
-  - [ ] 5.4 Create generation progress indicator with timer
+- [x] 2.0 Create AI Image Generation Server Functions
+  - [x] 2.1 Create ai-image-functions.ts with image generation server function
+  - [x] 2.2 Implement reference image upload to R2 with proper prefixes
+  - [x] 2.3 Integrate Gemini 2.5 Flash Image Preview model for generation
+  - [x] 2.4 Add error handling and validation for AI API calls
+- [x] 3.0 Build Studio Route and Core UI Components
+  - [x] 3.1 Create /studio route with basic layout
+  - [x] 3.2 Add navigation link to studio in main navigation
+  - [x] 3.3 Create API key input component with validation
+  - [x] 3.4 Create text prompt input component
+  - [x] 3.5 Add generation count selector (1-5 images)
+- [x] 4.0 Implement Image Upload and Management System
+  - [x] 4.1 Create image upload component with drag-and-drop
+  - [x] 4.2 Add file validation (size, format, count limits)
+  - [x] 4.3 Implement image preview thumbnails for reference images
+  - [x] 4.4 Add remove functionality for uploaded reference images
+- [x] 5.0 Create Image Gallery and Download Functionality
+  - [x] 5.1 Create image gallery component for displaying results
+  - [x] 5.2 Implement individual image download functionality
+  - [x] 5.3 Add image preview/lightbox for generated images
+  - [x] 5.4 Create generation progress indicator with timer

@@ -10,6 +10,9 @@ npx wrangler kv namespace create "ANALYTICS_CACHE"
 echo "Creating R2 bucket for exports..."
 npx wrangler r2 bucket create analytics-data
 
+echo "Creating R2 bucket for images..."
+npx wrangler r2 bucket create image-studio-data
+
 echo ""
 echo "Resources created! Now update wrangler.jsonc with the KV namespace ID shown above."
 echo ""

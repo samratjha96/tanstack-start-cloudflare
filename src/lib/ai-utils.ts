@@ -1,5 +1,5 @@
-import { google } from '@ai-sdk/google';
-import { experimental_generateImage as generateImage } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { generateText } from 'ai';
 import type {
   AIImageGenerationRequest,
   AIModelConfig,
@@ -12,7 +12,7 @@ import type {
  * Configuration for AI image generation using Google's Gemini 2.5 Flash Image Preview model
  */
 export const AI_CONFIG: AIModelConfig = {
-  model: 'gemini-2.5-flash-image',
+  model: 'gemini-2.5-flash-image-preview',
   maxImages: 5,
   maxFileSize: 5 * 1024 * 1024, // 5MB in bytes
   supportedFormats: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const,
@@ -55,7 +55,7 @@ export function createGoogleProvider(apiKey: string) {
     throw new Error(validation.error || 'Invalid Google API key format');
   }
 
-  return google({
+  return createGoogleGenerativeAI({
     apiKey,
   });
 }
@@ -87,7 +87,7 @@ export async function generateAIImages(options: Omit<AIImageGenerationRequest, '
       throw new Error(`File ${file.name} exceeds maximum size of ${AI_CONFIG.maxFileSize / (1024 * 1024)}MB`);
     }
 
-    if (!AI_CONFIG.supportedFormats.includes(file.type)) {
+    if (!AI_CONFIG.supportedFormats.includes(file.type as ImageFormat)) {
       throw new Error(`Unsupported file format: ${file.type}`);
     }
   }
@@ -95,15 +95,27 @@ export async function generateAIImages(options: Omit<AIImageGenerationRequest, '
   const provider = createGoogleProvider(apiKey);
 
   try {
-    const result = await generateImage({
-      model: provider(AI_CONFIG.model),
-      prompt,
-      n: count,
-      // Note: Reference images will be handled in the server function
-      // where we can properly convert File objects to the format expected by the AI SDK
-    });
+    const images: Array<{ data: Uint8Array; mediaType: string }> = [];
 
-    return result;
+    // Gemini image outputs are returned via result.files
+    // We run count times to request multiple images as needed
+    for (let i = 0; i < count; i++) {
+      const textResult = await generateText({
+        model: provider(AI_CONFIG.model),
+        prompt,
+      });
+
+      const files = (textResult as any).files as Array<{ mediaType: string; uint8Array?: Uint8Array }> | undefined;
+      if (!files || files.length === 0) continue;
+
+      for (const file of files) {
+        if (file?.mediaType?.startsWith?.('image/') && file.uint8Array instanceof Uint8Array) {
+          images.push({ data: file.uint8Array, mediaType: file.mediaType });
+        }
+      }
+    }
+
+    return { images };
   } catch (error) {
     if (error instanceof Error) {
       // Handle common API errors

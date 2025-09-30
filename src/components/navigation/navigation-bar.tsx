@@ -23,6 +23,8 @@ interface NavigationItem {
 const navigationItems: NavigationItem[] = [
   { label: "Features", href: "#features", scrollTo: "features" },
   { label: "Analytics", href: "/analytics" },
+  { label: "Explorer", href: "/explorer" },
+  { label: "AI Studio", href: "/studio" },
   {
     label: "Documentation",
     href: "https://tanstack.com/start/latest/docs/framework/react/overview",

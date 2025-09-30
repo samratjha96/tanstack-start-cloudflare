@@ -19,6 +19,10 @@
 		{
 			"binding": "ANALYTICS_STORAGE",
 			"bucket_name": "analytics-data"
+		},
+		{
+			"binding": "IMAGE_STORAGE",
+			"bucket_name": "image-studio-data"
 		}
 	],
 	"observability": {

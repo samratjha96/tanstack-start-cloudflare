@@ -8,80 +8,116 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as AnalyticsRouteImport } from "./routes/analytics";
-import { Route as IndexRouteImport } from "./routes/index";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as StudioRouteImport } from './routes/studio'
+import { Route as ExplorerRouteImport } from './routes/explorer'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
+import { Route as IndexRouteImport } from './routes/index'
 
+const StudioRoute = StudioRouteImport.update({
+  id: '/studio',
+  path: '/studio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExplorerRoute = ExplorerRouteImport.update({
+  id: '/explorer',
+  path: '/explorer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
-  id: "/analytics",
-  path: "/analytics",
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/analytics": typeof AnalyticsRoute;
+  '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/explorer': typeof ExplorerRoute
+  '/studio': typeof StudioRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/analytics": typeof AnalyticsRoute;
+  '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/explorer': typeof ExplorerRoute
+  '/studio': typeof StudioRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/analytics": typeof AnalyticsRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/explorer': typeof ExplorerRoute
+  '/studio': typeof StudioRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/analytics";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/analytics";
-  id: "__root__" | "/" | "/analytics";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/analytics' | '/explorer' | '/studio'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/analytics' | '/explorer' | '/studio'
+  id: '__root__' | '/' | '/analytics' | '/explorer' | '/studio'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AnalyticsRoute: typeof AnalyticsRoute;
+  IndexRoute: typeof IndexRoute
+  AnalyticsRoute: typeof AnalyticsRoute
+  ExplorerRoute: typeof ExplorerRoute
+  StudioRoute: typeof StudioRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/analytics": {
-      id: "/analytics";
-      path: "/analytics";
-      fullPath: "/analytics";
-      preLoaderRoute: typeof AnalyticsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+    '/studio': {
+      id: '/studio'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof StudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explorer': {
+      id: '/explorer'
+      path: '/explorer'
+      fullPath: '/explorer'
+      preLoaderRoute: typeof ExplorerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
-};
+  ExplorerRoute: ExplorerRoute,
+  StudioRoute: StudioRoute,
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx";
-import type { startInstance } from "./start.tsx";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.tsx'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }
