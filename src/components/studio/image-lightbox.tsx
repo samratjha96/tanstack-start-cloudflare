@@ -8,7 +8,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useImageDownload } from '@/hooks/use-image-download';
 import type { StoredImage, GeneratedImage } from '@/types/ai-image';
@@ -89,9 +89,12 @@ export function ImageLightbox({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-[95vw] max-h-[95vh] w-full h-full p-0 overflow-hidden"
+        className="!max-w-none !max-h-none !w-screen !h-screen !p-0 !gap-0 !border-0 !rounded-none !bg-transparent !top-0 !left-0 !transform-none !translate-x-0 !translate-y-0 overflow-hidden fixed inset-0 !z-[100]"
         showCloseButton={false}
       >
+        <DialogTitle className="sr-only">
+          Image Lightbox - {currentImage.filename}
+        </DialogTitle>
         <div className="relative w-full h-full bg-black/95 flex flex-col">
           {/* Header with controls */}
           <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/50 to-transparent p-4">

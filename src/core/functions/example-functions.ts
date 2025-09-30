@@ -3,7 +3,7 @@ import { z } from "zod";
 import { exampleMiddlewareWithContext } from "@/core/middleware/example-middleware";
 // import { env } from "cloudflare:workers";
 
-const baseFunction = createServerFn().middleware([
+const baseFunction = createServerFn({ method: 'POST' }).middleware([
   exampleMiddlewareWithContext,
 ]);
 

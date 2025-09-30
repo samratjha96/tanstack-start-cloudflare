@@ -118,10 +118,11 @@ export interface ImagePreviewProps {
 export interface ImageGeneration {
   id: string;
   prompt: string;
-  imageCount: number;
+  imageIndex: number; // Which image this is (0, 1, 2, etc.) in the batch
+  batchId: string; // Identifier for the batch of images requested together
   startTime: number;
   status: 'pending' | 'generating' | 'completed' | 'error';
-  images?: GeneratedImage[];
+  image?: GeneratedImage; // Single image result (not array)
   error?: string;
   referenceImages?: StoredImage[];
 }

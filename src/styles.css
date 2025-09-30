@@ -136,3 +136,19 @@ code {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Custom smooth spinner animation */
+  .animate-smooth-spin {
+    animation: smooth-spin 1s linear infinite;
+  }
+  
+  @keyframes smooth-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}

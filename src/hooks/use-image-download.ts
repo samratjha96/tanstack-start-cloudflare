@@ -35,7 +35,15 @@ export function useImageDownload() {
         const timestamp = 'createdAt' in image
           ? new Date(image.createdAt).toISOString().slice(0, 16).replace(/[:-]/g, '')
           : Date.now().toString();
-        filename = sanitizeFilename(`${image.filename || `image_${timestamp}`}.${extension}`);
+
+        let baseFilename = image.filename || `image_${timestamp}`;
+
+        // Check if filename already has an extension
+        if (baseFilename.includes('.')) {
+          filename = sanitizeFilename(baseFilename);
+        } else {
+          filename = sanitizeFilename(`${baseFilename}.${extension}`);
+        }
       }
 
       // Download the image

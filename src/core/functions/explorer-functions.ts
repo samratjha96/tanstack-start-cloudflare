@@ -11,7 +11,7 @@ const ListBucketContentsSchema = z.object({
 
 type ListBucketContentsInput = z.infer<typeof ListBucketContentsSchema>
 
-export const listBucketContents = createServerFn()
+export const listBucketContents = createServerFn({ method: 'POST' })
   .inputValidator((data: ListBucketContentsInput) => ListBucketContentsSchema.parse(data))
   .handler(async (ctx) => {
     const startTime = Date.now()
@@ -83,7 +83,7 @@ const GetObjectUrlSchema = z.object({
 
 type GetObjectUrlInput = z.infer<typeof GetObjectUrlSchema>
 
-export const getObjectUrl = createServerFn()
+export const getObjectUrl = createServerFn({ method: 'POST' })
   .inputValidator((data: GetObjectUrlInput) => GetObjectUrlSchema.parse(data))
   .handler(async (ctx) => {
     const { env } = await import('cloudflare:workers')

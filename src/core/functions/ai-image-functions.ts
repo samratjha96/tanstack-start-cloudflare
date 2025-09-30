@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import { generateAIImages, validateGoogleApiKey, validateImageFile, fileToDataUrl } from '@/lib/ai-utils';
+import { generateAIImages, validateGoogleApiKey, validateImageFile } from '@/lib/ai-utils';
 import { putR2BinaryObject } from './r2-functions';
 import type {
   AIImageGenerationResponse,
@@ -22,7 +22,25 @@ const ImageGenerationSchema = z.object({
   apiKey: z.string().min(1, 'API key is required'),
   prompt: z.string().min(1, 'Prompt is required').max(2000, 'Prompt too long'),
   count: z.number().min(1).max(5),
-  referenceImages: z.array(z.any()).max(5).optional().default([])
+  referenceImages: z.array(z.object({
+    fileName: z.string(),
+    fileType: z.string(),
+    fileSize: z.number(),
+    fileData: z.string() // base64 data URL
+  })).max(5).optional().default([])
+});
+
+const SingleImageGenerationSchema = z.object({
+  apiKey: z.string().min(1, 'API key is required'),
+  prompt: z.string().min(1, 'Prompt is required').max(2000, 'Prompt too long'),
+  imageIndex: z.number().min(0).max(4), // 0-based index
+  batchId: z.string().min(1, 'Batch ID is required'),
+  referenceImages: z.array(z.object({
+    fileName: z.string(),
+    fileType: z.string(),
+    fileSize: z.number(),
+    fileData: z.string() // base64 data URL
+  })).max(5).optional().default([])
 });
 
 const ImageUploadSchema = z.object({
@@ -250,8 +268,198 @@ export const batchUploadReferenceImages = createServerFn({ method: 'POST' })
   });
 
 /**
+ * Server function to generate a single AI image using Google Gemini
+ * Used for parallel individual image generation
+ */
+export const generateSingleImage = createServerFn({ method: 'POST' })
+  .inputValidator((data) => SingleImageGenerationSchema.parse(data))
+  .handler(async ({ data }): Promise<AIImageGenerationResponse> => {
+    const startTime = Date.now();
+
+    try {
+      // Validate API key
+      const keyValidation = validateGoogleApiKey(data.apiKey);
+      if (!keyValidation.isValid) {
+        return {
+          success: false,
+          error: keyValidation.error || 'Invalid API key'
+        };
+      }
+
+      // Process reference images if provided
+      const processedReferenceImages: StoredImage[] = [];
+      if (data.referenceImages && data.referenceImages.length > 0) {
+        for (let i = 0; i < data.referenceImages.length; i++) {
+          const fileInfo = data.referenceImages[i];
+          
+          // Defensive checks
+          if (!fileInfo || !fileInfo.fileData || !fileInfo.fileName || !fileInfo.fileType) {
+            continue;
+          }
+
+          // Upload reference image to R2
+          const uploadResponse = await uploadReferenceImage({
+            data: {
+              fileData: fileInfo.fileData,
+              fileName: fileInfo.fileName,
+              fileType: fileInfo.fileType,
+              fileSize: fileInfo.fileSize
+            }
+          });
+
+          if (!uploadResponse.success) {
+            return {
+              success: false,
+              error: `Failed to upload reference image ${i + 1}: ${uploadResponse.error}`
+            };
+          }
+
+          processedReferenceImages.push({
+            id: uploadResponse.imageId,
+            url: uploadResponse.url,
+            filename: fileInfo.fileName,
+            originalName: fileInfo.fileName,
+            format: fileInfo.fileType as ImageFormat,
+            size: fileInfo.fileSize,
+            r2Key: uploadResponse.r2Key,
+            type: 'reference'
+          });
+        }
+      }
+
+      // Generate single image using AI SDK
+      // Convert serialized reference images to File-like objects for AI generation
+      const fileObjects: File[] = [];
+      if (data.referenceImages && data.referenceImages.length > 0) {
+        for (const fileInfo of data.referenceImages) {
+          // Convert data URL to blob then to File
+          const response = await fetch(fileInfo.fileData);
+          const blob = await response.blob();
+          const file = new File([blob], fileInfo.fileName, { type: fileInfo.fileType });
+          fileObjects.push(file);
+        }
+      }
+
+      const aiResult = await generateAIImages({
+        apiKey: data.apiKey,
+        prompt: data.prompt,
+        referenceImages: fileObjects,
+        count: 1 // Always generate exactly 1 image
+      });
+
+      // Process the single generated image and upload to R2
+      const generatedImages: GeneratedImage[] = [];
+
+      if (aiResult.images && aiResult.images.length > 0) {
+        const image = aiResult.images[0] as { data?: Uint8Array; mediaType?: string };
+
+        try {
+          const contentType = image.mediaType || 'image/png';
+          const imageBytes = image.data;
+          
+          if (!(imageBytes instanceof Uint8Array)) {
+            throw new Error(`Invalid image data: expected Uint8Array, got ${typeof imageBytes}`);
+          }
+
+          // Generate R2 key for generated image with batch and index info
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substring(2, 8);
+          const fileExtension = contentType.includes('png') ? 'png' : 'jpg';
+          const r2Key = `${R2_PREFIXES.GENERATED_IMAGES}/${data.batchId}-${data.imageIndex}-${timestamp}-${randomSuffix}.${fileExtension}`;
+
+          console.log(`Uploading single generated image to R2: ${r2Key}, size: ${imageBytes.byteLength} bytes`);
+
+          // Upload to R2 using proper API
+          const uploadResult = await putR2BinaryObject({
+            data: {
+              bucket: 'IMAGE_STORAGE',
+              key: r2Key,
+              data: imageBytes,
+              contentType,
+              metadata: {
+                generatedAt: new Date().toISOString(),
+                prompt: data.prompt.substring(0, 500), // Limit prompt length in metadata
+                imageIndex: String(data.imageIndex),
+                batchId: data.batchId,
+                generationBatch: String(timestamp),
+                model: 'gemini-2.5-flash-image-preview'
+              }
+            }
+          });
+
+          if (!uploadResult.success) {
+            throw new Error(`Failed to upload to R2: ${uploadResult.error}`);
+          }
+
+          console.log(`Successfully uploaded single generated image to R2: ${r2Key}`);
+
+          const publicUrl = `https://image-studio-data.r2.cloudflarestorage.com/${r2Key}`;
+
+          generatedImages.push({
+            id: `${data.batchId}-${data.imageIndex}-${timestamp}-${randomSuffix}`,
+            url: publicUrl,
+            filename: `generated-${data.batchId}-${data.imageIndex}.${fileExtension}`,
+            format: contentType as ImageFormat,
+            size: imageBytes.byteLength,
+            createdAt: new Date().toISOString(),
+            r2Key
+          });
+
+          console.log(`Single image generation completed successfully: ${r2Key}`);
+
+        } catch (error) {
+          console.error(`Failed to process generated image:`, error);
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to process generated image'
+          };
+        }
+      }
+
+      if (generatedImages.length === 0) {
+        return {
+          success: false,
+          error: 'No image was successfully generated and stored'
+        };
+      }
+
+      const generationTime = Date.now() - startTime;
+
+      return {
+        success: true,
+        images: generatedImages,
+        referenceImages: processedReferenceImages,
+        generationTime
+      };
+
+    } catch (error) {
+      const generationTime = Date.now() - startTime;
+
+      let errorMessage = 'Single image generation failed';
+
+      if (error instanceof Error) {
+        if (error.message.includes('quota')) {
+          errorMessage = 'API quota exceeded. Please check your Google API usage limits.';
+        } else if (error.message.includes('authentication') || error.message.includes('API key')) {
+          errorMessage = 'Invalid API key. Please check your Google API key.';
+        } else if (error.message.includes('rate limit')) {
+          errorMessage = 'Rate limit exceeded. Please wait a moment before trying again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        generationTime
+      };
+    }
+  });
+
+/**
  * Server function to generate AI images using Google Gemini
- * Main function for the AI Image Studio functionality
+ * Main function for the AI Image Studio functionality (Legacy - kept for backward compatibility)
  */
 export const generateImages = createServerFn({ method: 'POST' })
   .inputValidator((data) => ImageGenerationSchema.parse(data))
@@ -272,25 +480,20 @@ export const generateImages = createServerFn({ method: 'POST' })
       const processedReferenceImages: StoredImage[] = [];
       if (data.referenceImages && data.referenceImages.length > 0) {
         for (let i = 0; i < data.referenceImages.length; i++) {
-          const file = data.referenceImages[i];
-
-          // Validate each reference image
-          const validation = validateImageFile(file);
-          if (!validation.isValid) {
-            return {
-              success: false,
-              error: `Reference image ${i + 1}: ${validation.error}`
-            };
+          const fileInfo = data.referenceImages[i];
+          
+          // Defensive checks
+          if (!fileInfo || !fileInfo.fileData || !fileInfo.fileName || !fileInfo.fileType) {
+            continue;
           }
 
           // Upload reference image to R2
-          const fileData = await fileToDataUrl(file);
           const uploadResponse = await uploadReferenceImage({
             data: {
-              fileData,
-              fileName: file.name,
-              fileType: file.type,
-              fileSize: file.size
+              fileData: fileInfo.fileData,
+              fileName: fileInfo.fileName,
+              fileType: fileInfo.fileType,
+              fileSize: fileInfo.fileSize
             }
           });
 
@@ -304,10 +507,10 @@ export const generateImages = createServerFn({ method: 'POST' })
           processedReferenceImages.push({
             id: uploadResponse.imageId,
             url: uploadResponse.url,
-            filename: file.name,
-            originalName: file.name,
-            format: file.type as ImageFormat,
-            size: file.size,
+            filename: fileInfo.fileName,
+            originalName: fileInfo.fileName,
+            format: fileInfo.fileType as ImageFormat,
+            size: fileInfo.fileSize,
             r2Key: uploadResponse.r2Key,
             type: 'reference'
           });
@@ -315,19 +518,27 @@ export const generateImages = createServerFn({ method: 'POST' })
       }
 
       // Generate images using AI SDK
-      console.log(`Generating ${data.count} images with prompt: "${data.prompt.substring(0, 100)}..."`);
+      // Convert serialized reference images to File-like objects for AI generation
+      const fileObjects: File[] = [];
+      if (data.referenceImages && data.referenceImages.length > 0) {
+        for (const fileInfo of data.referenceImages) {
+          // Convert data URL to blob then to File
+          const response = await fetch(fileInfo.fileData);
+          const blob = await response.blob();
+          const file = new File([blob], fileInfo.fileName, { type: fileInfo.fileType });
+          fileObjects.push(file);
+        }
+      }
 
       const aiResult = await generateAIImages({
         apiKey: data.apiKey,
         prompt: data.prompt,
-        referenceImages: data.referenceImages,
+        referenceImages: fileObjects,
         count: data.count
       });
 
       // Process generated images and upload to R2
       const generatedImages: GeneratedImage[] = [];
-
-      console.log(`AI generation result: ${aiResult.images?.length || 0} images returned`);
 
       if (aiResult.images && aiResult.images.length > 0) {
         for (let i = 0; i < aiResult.images.length; i++) {
@@ -336,8 +547,6 @@ export const generateImages = createServerFn({ method: 'POST' })
           try {
             const contentType = image.mediaType || 'image/png';
             const imageBytes = image.data;
-            
-            console.log(`Processing generated image ${i + 1}: contentType=${contentType}, dataType=${typeof imageBytes}, isUint8Array=${imageBytes instanceof Uint8Array}, size=${imageBytes?.byteLength || 'unknown'}`);
             
             if (!(imageBytes instanceof Uint8Array)) {
               throw new Error(`Invalid image data for generated image ${i + 1}: expected Uint8Array, got ${typeof imageBytes}`);
@@ -403,7 +612,6 @@ export const generateImages = createServerFn({ method: 'POST' })
       }
 
       const generationTime = Date.now() - startTime;
-      console.log(`Generated ${generatedImages.length} images in ${generationTime}ms`);
 
       return {
         success: true,
@@ -414,7 +622,6 @@ export const generateImages = createServerFn({ method: 'POST' })
 
     } catch (error) {
       const generationTime = Date.now() - startTime;
-      console.error('Image generation failed:', error);
 
       let errorMessage = 'Image generation failed';
 
@@ -491,7 +698,7 @@ export const getImageDownloadUrl = createServerFn({ method: 'POST' })
  * Server function to list images in R2 storage
  * Useful for debugging and administration
  */
-export const listStoredImages = createServerFn()
+export const listStoredImages = createServerFn({ method: 'POST' })
   .handler(async (): Promise<ServerFunctionResponse<{ images: Array<{ key: string; size: number; uploaded: string; metadata: any }> }>> => {
     const { env } = await import('cloudflare:workers');
 
@@ -524,7 +731,7 @@ export const listStoredImages = createServerFn()
 /**
  * Debug function to list only generated images from R2 storage
  */
-export const listGeneratedImages = createServerFn()
+export const listGeneratedImages = createServerFn({ method: 'POST' })
   .handler(async (): Promise<ServerFunctionResponse<{ generatedImages: Array<{ key: string; size: number; uploaded: string; metadata: any }> }>> => {
     const { env } = await import('cloudflare:workers');
 

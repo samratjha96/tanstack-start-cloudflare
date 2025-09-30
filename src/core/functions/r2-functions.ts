@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
-const baseFunction = createServerFn()
+const baseFunction = createServerFn({ method: 'POST' })
 
 // List objects in R2 bucket
 const ListObjectsSchema = z.object({

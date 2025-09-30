@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { file, z } from "zod";
 import { env } from "cloudflare:workers";
 
-export const trackServerExecution = createServerFn().handler(async () => {
+export const trackServerExecution = createServerFn({ method: 'POST' }).handler(async () => {
   const today = new Date().toISOString().split("T")[0];
   const cacheKey = `server_executions:${today}`;
 
@@ -24,7 +24,7 @@ export const trackServerExecution = createServerFn().handler(async () => {
   }
 });
 
-export const getExecutionCount = createServerFn().handler(async () => {
+export const getExecutionCount = createServerFn({ method: 'POST' }).handler(async () => {
   const today = new Date().toISOString().split("T")[0];
   const cacheKey = `server_executions:${today}`;
 
@@ -89,7 +89,7 @@ export const exportAnalyticsToR2 = createServerFn({
     }
   });
 
-export const listR2Exports = createServerFn().handler(async () => {
+export const listR2Exports = createServerFn({ method: 'POST' }).handler(async () => {
   try {
     const list = await env.ANALYTICS_STORAGE.list();
 

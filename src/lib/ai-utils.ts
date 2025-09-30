@@ -97,12 +97,48 @@ export async function generateAIImages(options: Omit<AIImageGenerationRequest, '
   try {
     const images: Array<{ data: Uint8Array; mediaType: string }> = [];
 
+    // Build the proper prompt structure according to AI SDK docs
+    // For reference images, we need to construct a messages array with image content
+    let promptStructure;
+    
+    if (referenceImages.length > 0) {
+      // When we have reference images, use the message format
+      const content: Array<{ type: 'text', text: string } | { type: 'image', image: Uint8Array | Buffer, mediaType?: string }> = [
+        {
+          type: 'text',
+          text: prompt
+        }
+      ];
+      
+      // Add reference images to the content
+      for (const file of referenceImages) {
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        content.push({
+          type: 'image',
+          image: uint8Array,
+          mediaType: file.type
+        });
+      }
+      
+      promptStructure = [
+        {
+          role: 'user' as const,
+          content
+        }
+      ];
+    } else {
+      // Simple text prompt when no reference images
+      promptStructure = prompt;
+    }
+
     // Gemini image outputs are returned via result.files
     // We run count times to request multiple images as needed
     for (let i = 0; i < count; i++) {
       const textResult = await generateText({
         model: provider(AI_CONFIG.model),
-        prompt,
+        prompt: promptStructure,
       });
 
       const files = (textResult as any).files as Array<{ mediaType: string; uint8Array?: Uint8Array }> | undefined;

@@ -20,13 +20,22 @@ export const downloadFile = (url: string, filename: string): void => {
 
 export const downloadImageAsBlob = async (url: string, filename: string): Promise<void> => {
   try {
-    // Fetch the image as a blob to handle cross-origin scenarios
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    let blob: Blob;
+
+    // Check if the URL is a data URL
+    if (url.startsWith('data:')) {
+      // Handle data URLs by converting them to blobs
+      const response = await fetch(url);
+      blob = await response.blob();
+    } else {
+      // Handle regular URLs with fetch
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+      blob = await response.blob();
     }
 
-    const blob = await response.blob();
     const blobUrl = URL.createObjectURL(blob);
 
     // Create download link
@@ -43,15 +52,41 @@ export const downloadImageAsBlob = async (url: string, filename: string): Promis
     URL.revokeObjectURL(blobUrl);
   } catch (error) {
     console.error("Download failed:", error);
-    // Fallback to simple download method
-    downloadFile(url, filename);
+    // Fallback to simple download method for data URLs
+    if (url.startsWith('data:')) {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      downloadFile(url, filename);
+    }
   }
 };
 
 export const getFileExtensionFromUrl = (url: string): string => {
-  const pathname = new URL(url).pathname;
-  const extension = pathname.split('.').pop();
-  return extension || 'jpg'; // default to jpg if no extension found
+  // Handle data URLs by extracting MIME type
+  if (url.startsWith('data:')) {
+    const mimeType = url.split(';')[0].split(':')[1];
+    switch (mimeType) {
+      case 'image/png': return 'png';
+      case 'image/jpeg': return 'jpg';
+      case 'image/webp': return 'webp';
+      case 'image/gif': return 'gif';
+      default: return 'jpg';
+    }
+  }
+
+  // Handle regular URLs
+  try {
+    const pathname = new URL(url).pathname;
+    const extension = pathname.split('.').pop();
+    return extension || 'jpg'; // default to jpg if no extension found
+  } catch {
+    return 'jpg'; // fallback if URL parsing fails
+  }
 };
 
 export const sanitizeFilename = (filename: string): string => {
