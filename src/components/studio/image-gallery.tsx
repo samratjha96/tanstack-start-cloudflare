@@ -40,7 +40,7 @@ export function ImageGallery({
   // Update timers for active image slots (reduced frequency to prevent spazzing)
   useEffect(() => {
     const activeSlots = imageSlots.filter(slot => slot.status === 'generating');
-    
+
     if (activeSlots.length === 0) {
       // Clear timers for completed/failed generations
       setGenerationTimers(prev => {
@@ -102,15 +102,15 @@ export function ImageGallery({
     const isError = slot.status === 'error';
     const isCompleted = slot.status === 'completed';
     const isGenerating = slot.status === 'generating';
-    
+
     // Memoize the formatted time to prevent unnecessary re-renders
     const formattedTime = formatTime(elapsedTime);
-    
+
     // If completed and has image, find the corresponding image with URL from generatedImages
     if (isCompleted && slot.image) {
       // Find the image with proper URL loading from the generatedImages prop
       const imageWithUrl = generatedImages.find(img => img.id === slot.image!.id);
-      
+
       return (
         <ImageCard
           image={imageWithUrl || slot.image}
@@ -118,7 +118,7 @@ export function ImageGallery({
         />
       );
     }
-    
+
     // Otherwise render placeholder/generating state
     return (
       <div className="relative group">
@@ -128,7 +128,7 @@ export function ImageGallery({
         )}>
           <div className={cn(
             "w-full h-48 flex items-center justify-center",
-            isError 
+            isError
               ? "bg-gradient-to-br from-destructive/10 to-destructive/5"
               : "bg-gradient-to-br from-muted to-muted/80"
           )}>
@@ -182,7 +182,7 @@ export function ImageGallery({
           {/* Generation badge */}
           <div className={cn(
             "absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm",
-            isError 
+            isError
               ? "bg-destructive/90 text-destructive-foreground"
               : isCompleted
               ? "bg-green-500/90 text-white"
@@ -306,7 +306,7 @@ export function ImageGallery({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Image Gallery</CardTitle>
+          <CardTitle className="text-3xl">Image Gallery</CardTitle>
           <CardDescription>
             Your reference and generated images
           </CardDescription>
@@ -339,7 +339,7 @@ export function ImageGallery({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Image Gallery</CardTitle>
+          <CardTitle className="text-3xl">Image Gallery</CardTitle>
           <CardDescription>
             Your reference and generated images will appear here
           </CardDescription>
@@ -364,16 +364,16 @@ export function ImageGallery({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Image Gallery</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-3xl">Image Gallery</CardTitle>
+        <CardDescription className="text-xl">
           {(() => {
             const activeSlots = imageSlots.filter(slot => slot.status === 'generating' || slot.status === 'pending').length;
             const completedSlots = imageSlots.filter(slot => slot.status === 'completed').length;
-            
+
             const parts = [];
             if (activeSlots > 0) parts.push(`${activeSlots} generating`);
             if (completedSlots > 0) parts.push(`${completedSlots} generated`);
-            
+
             return parts.join(', ') || 'Your generated images will appear here';
           })()}
         </CardDescription>

@@ -138,8 +138,8 @@ export function ImageUpload({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Reference Images</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-3xl">Reference Images</CardTitle>
+        <CardDescription className="text-xl">
           Upload images for editing or style reference (optional)
         </CardDescription>
       </CardHeader>
@@ -178,16 +178,16 @@ export function ImageUpload({
           ) : (
             <>
               <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">
+              <p className="text-base text-muted-foreground mb-3">
                 {dragActive
                   ? "Drop images here"
                   : "Drag and drop images here, or click to select"
                 }
               </p>
-              <p className="text-xs text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 Maximum {maxFiles} images, {formatFileSize(maxFileSize)} each
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Supported: {acceptedFormats.map(format => format.split('/')[1]).join(', ').toUpperCase()}
               </p>
               <Button

@@ -142,8 +142,8 @@ function StudioPage() {
               {/* Prompt Input */}
               <Card className="p-2">
                 <CardHeader className="pb-6">
-                  <CardTitle className="text-2xl">Generation Prompt</CardTitle>
-                  <CardDescription className="text-base">
+                  <CardTitle className="text-3xl">Generation Prompt</CardTitle>
+                  <CardDescription className="text-xl">
                     Describe the image you want to create
                   </CardDescription>
                   <CardAction>
@@ -169,16 +169,16 @@ function StudioPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-3">
-                    <Label htmlFor="prompt" className="text-base font-medium">Image Description</Label>
+                    <Label htmlFor="prompt" className="text-lg font-medium">Image Description</Label>
                     <Textarea
                       id="prompt"
                       placeholder="A whimsical watercolor garden party with vintage china and wildflowers dancing in the breeze..."
                       value={form.prompt}
                       onChange={(e) => setForm(prev => ({ ...prev, prompt: e.target.value }))}
-                      className="h-40 resize-none text-base"
+                      className="h-40 resize-none text-xl leading-relaxed"
                       maxLength={2000}
                     />
-                    <div className="flex justify-between text-sm text-muted-foreground">
+                    <div className="flex justify-between text-base text-muted-foreground">
                       <span>Be detailed for better results</span>
                       <span>{form.prompt.length}/2000</span>
                     </div>
